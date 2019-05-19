@@ -31,7 +31,7 @@ class PointwiseRanker:
     with torch.no_grad():
       k = k if k is not None else len(icd)
       ranks = []
-      for note in note.to(self.device):
+      for note, icd in zip(note, icd):
         if self.chunk_size != -1:
           all_scores = []
           for from_idx, to_idx in zip(range(0,

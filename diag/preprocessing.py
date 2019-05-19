@@ -1,3 +1,4 @@
+import torch
 from torch.nn.utils.rnn import pad_sequence
 from fastai.text import Tokenizer
 import pydash as _
@@ -15,15 +16,14 @@ def icd9_to_label(df):
     mapping[icd9] = len(mapping)
   return mapping
 
-def to_pairs(diagnoses):
-  pairs = []
+def to_pairs_by_hadm_id(diagnoses_by_hadm_id):
+  cnt = 0
+  pairs_by_hadm_id = {}
   label_seq_nums_for_hadm_id = []
   current_hadm_id = None
   current_note_id = None
-  for hadm_id, note_id, seq_num, label in zip(diagnoses['hadm_id'],
-                                              diagnoses['note_id'],
-                                              diagnoses['seq_num'],
-                                              diagnoses['label']):
+  for hadm_id, diag in diagnoses_by_hadm_id:
+    hadm_id, note_id, seq_num, label = diag
     if (current_hadm_id is None) and (current_note_id is None):
       current_hadm_id = hadm_id
       current_note_id = note_id
@@ -34,12 +34,13 @@ def to_pairs(diagnoses):
                   for label, seq_num in sorted(label_seq_nums_for_hadm_id,
                                                key=itemgetter(1))]
       for pair in combinations(in_order, 2):
-        pairs.append((current_note_id, pair))
+        pairs_by_hadm_id[hadm_id] = (current_note_id, pair)
+        cnt += 1
       label_seq_nums_for_hadm_id = []
       label_seq_nums_for_hadm_id.append((label, seq_num))
       current_hadm_id = hadm_id
       current_note_id = note_id
-  return pairs
+  return pairs_by_hadm_id, cnt
 
 def pad(batch, device=torch.device('cpu')):
   batch_lengths = torch.tensor(_.map_(batch, len),
