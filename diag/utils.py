@@ -3,6 +3,12 @@ from collections import Counter
 import torch
 import torch.nn as nn
 
+def get_to_label_mapping(ids):
+  mapping = {}
+  for an_id in ids:
+    mapping[an_id] = len(mapping)
+  return mapping
+
 class Identity(nn.Module):
   def forward(self, x): return x
 

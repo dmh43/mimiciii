@@ -10,20 +10,16 @@ from collections import Counter
 pad_token_idx = 0
 unk_token_idx = 1
 
-def icd9_to_label(df):
-  mapping = {}
-  for icd9 in df.icd9_code.unique():
-    mapping[icd9] = len(mapping)
-  return mapping
-
-def to_pairs_by_hadm_id(diagnoses_by_hadm_id):
+def to_pairs_by_hadm_id(diagnoses):
   cnt = 0
   pairs_by_hadm_id = {}
   label_seq_nums_for_hadm_id = []
   current_hadm_id = None
   current_note_id = None
-  for hadm_id, diag in diagnoses_by_hadm_id:
-    hadm_id, note_id, seq_num, label = diag
+  for hadm_id, note_id, seq_num, label in zip(diagnoses['hadm_id'],
+                                              diagnoses['note_id'],
+                                              diagnoses['seq_num'],
+                                              diagnoses['label']):
     if (current_hadm_id is None) and (current_note_id is None):
       current_hadm_id = hadm_id
       current_note_id = note_id
