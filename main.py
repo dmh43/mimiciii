@@ -55,7 +55,7 @@ def main():
   token_set = lazy(get_token_set)(tokenizer,
                                   icd_desc_lookup_by_label,
                                   opts=dict(min_num_occurances=model_params.min_num_occurances)).realize()
-  token_lookup = dict(zip(range(len(token_set)), token_set))
+  token_lookup = dict(zip(token_set, range(len(token_set))))
   notes_bow = CachedBoW(tokenizer=tokenizer, path='data/notes/', token_lookup=token_lookup)
   icd_desc_bow, __ = prepare_bow(icd_desc_lookup_by_label, token_lookup=token_lookup, token_set=token_set)
   num_unique_tokens = len(token_lookup)
@@ -66,7 +66,7 @@ def main():
     test, train = deal_folds(pairs_by_hadm_id, test_keys)
     test_rel_sets = to_rel_sets(test)
     test_hadm_ids = [hadm_id for hadm_id, g in groupby(test, itemgetter(0))]
-    test_note_id_by_hadm_id = {hadm_id: next(g)[1]
+    test_note_id_by_hadm_id = {hadm_id: next(g)[0]
                                for hadm_id, g in groupby(test, itemgetter(0))}
     note = pad([notes_bow[test_note_id_by_hadm_id[hadm_id]] for hadm_id in test_hadm_ids],
                device=device)

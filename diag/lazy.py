@@ -1,4 +1,8 @@
+from collections import defaultdict
 from pathlib import Path
+import sqlite3
+import pydash as _
+import pickle
 
 def realize(val):
   if isinstance(val, Lazy):
@@ -9,15 +13,35 @@ def realize(val):
 class Cache():
   def __init__(self, cache_path):
     self.cache_path = Path(cache_path)
+    self.db_path = self.cache_path.joinpath('cache.db')
+    self.connection = sqlite3.connect(self.db_path)
+    self.cursor = self.connection.cursor()
+
+  def _get_fn_cache_details(self, fn_name):
+    self.cursor.execute(f'select * from cache_details where fn_name = {fn_name}')
+    fn_cache_details = defaultdict(dict)
+    for row in self.cursor.fetchall():
+      fn_cache_details[row['cache_id']].update(row)
+    return fn_cache_details
 
   def is_cached(self, fn_name, opts):
-    pass
+    fn_cache_details = self._get_fn_cache_details(fn_name)
+    return _.some(fn_cache_details, lambda val, key: val == opts)
+
+  def _path_from_details(self, cache_details):
+    return self.cache_path.joinpath(str(cache_details['cache_id']))
 
   def read_cache(self, fn_name, opts):
-    pass
+    fn_cache_details = self._get_fn_cache_details(fn_name)
+    cache_details = _.find(fn_cache_details, lambda val, key: val == opts)
+    with open(self._path_from_details(cache_details), 'rb') as fh:
+      return pickle.load(fh)
 
   def cache_result(self, fn_name, opts, result):
-    pass
+    fn_cache_details = self._get_fn_cache_details(fn_name)
+    cache_details = _.find(fn_cache_details, lambda val, key: val == opts)
+    with open(self._path_from_details(cache_details), 'rb') as fh:
+      return pickle.dump(result, fh)
 
 
 class LazyBuilder():

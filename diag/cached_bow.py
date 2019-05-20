@@ -9,7 +9,7 @@ class CachedBoW():
     self.tokenizer, self.path, self.token_lookup = tokenizer, Path(path), token_lookup
     self.cache_path = Path('./cache/').joinpath(self.path)
 
-  def _get_bow_name(self, key): return str(key)
+  def _get_bow_name(self, key): return f'note_{key}'
 
   def _cached_get(self, key):
     with open(self.cache_path.joinpath(self._get_bow_name(key)), 'rb') as fh:
@@ -17,7 +17,7 @@ class CachedBoW():
 
   def _cache_result(self, key, bow):
     with open(self.cache_path.joinpath(self._get_bow_name(key)), 'wb') as fh:
-      pickle.dump(fh, bow)
+      pickle.dump(bow, fh)
 
   def _get_bow(self, key):
     with open(self.path.joinpath(self._get_bow_name(key))) as fh:
