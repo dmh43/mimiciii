@@ -37,10 +37,12 @@ class Cache():
     with open(self._path_from_details(cache_details), 'rb') as fh:
       return pickle.load(fh)
 
+  def _create_cache_details(self, fn_name, opts):
+    raise NotImplementedError
+
   def cache_result(self, fn_name, opts, result):
-    fn_cache_details = self._get_fn_cache_details(fn_name)
-    cache_details = _.find(fn_cache_details, lambda val, key: val == opts)
-    with open(self._path_from_details(cache_details), 'rb') as fh:
+    cache_details = self._create_cache_details(fn_name, opts)
+    with open(self._path_from_details(cache_details), 'wb') as fh:
       return pickle.dump(result, fh)
 
 
