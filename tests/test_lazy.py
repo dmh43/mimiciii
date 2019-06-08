@@ -1,4 +1,15 @@
-from diag.lazy import Lazy
+from diag.lazy import Lazy, Cache
 
-def test_lazy():
-  deferred = Lazy(int)
+
+def test_cache(tmp_path):
+  cache = Cache(tmp_path)
+  assert not cache.is_cached('my_fn', {})
+
+def test_cache_read(tmp_path):
+  cache = Cache(tmp_path)
+  cache.cache_result('my_fn', {}, 0)
+  assert cache.is_cached('my_fn', {})
+  assert cache.read_cached('my_fn', {}) == 0
+
+# def test_lazy(tmp_path):
+#   deferred = Lazy(int, tmp_path, cache)

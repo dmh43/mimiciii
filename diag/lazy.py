@@ -14,7 +14,7 @@ class Cache():
   def __init__(self, cache_path):
     self.cache_path = Path(cache_path)
     self.db_path = self.cache_path.joinpath('cache.db')
-    self.connection = sqlite3.connect(self.db_path)
+    self.connection = sqlite3.connect(str(self.db_path))
     self.cursor = self.connection.cursor()
 
   def _get_fn_cache_details(self, fn_name):
