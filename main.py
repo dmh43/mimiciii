@@ -16,7 +16,7 @@ from functools import reduce
 from operator import itemgetter
 
 from diag.fetchers import fetch_note_by_id, fetch_icd_desc_lookup, get_token_set
-from diag.preprocessing import to_pairs_by_hadm_id, get_default_tokenizer, prepare_bow, pad
+from diag.preprocessing import to_pairs_by_hadm_id, get_default_tokenizer, prepare_bow, pad_batch_list
 from diag.utils import to_lookup, get_token_cnts, get_to_label_mapping
 from diag.icd_encoder import ICDEncoder
 from diag.note_encoder import NoteEncoder
@@ -49,12 +49,12 @@ def main():
   diagnoses = diagnoses_df.to_dict('list')
   pairs_by_hadm_id, num_pairs = to_pairs_by_hadm_id(diagnoses)
   icd_desc_lookup = fetch_icd_desc_lookup()
-  icd_desc_lookup_by_label = {label_lookup[icd9]: desc
-                              for icd9, desc in icd_desc_lookup.items()}
+  icd_desc_lookup_by_label = {label: icd_desc_lookup.get(icd9, '')
+                              for icd9, label in label_lookup.items()}
   tokenizer = get_default_tokenizer()
-  token_set = lazy(get_token_set)(tokenizer,
-                                  icd_desc_lookup_by_label,
-                                  opts=dict(min_num_occurances=model_params.min_num_occurances)).realize()
+  token_set = get_token_set(tokenizer,
+                            icd_desc_lookup_by_label,
+                            opts=dict(min_num_occurances=model_params.min_num_occurances))
   token_lookup = dict(zip(token_set, range(len(token_set))))
   notes_bow = CachedBoW(tokenizer=tokenizer, path='data/notes/', token_lookup=token_lookup)
   icd_desc_bow, __ = prepare_bow(icd_desc_lookup_by_label, token_lookup=token_lookup, token_set=token_set)
@@ -68,11 +68,9 @@ def main():
     test_hadm_ids = [hadm_id for hadm_id, g in groupby(test, itemgetter(0))]
     test_note_id_by_hadm_id = {hadm_id: next(g)[0]
                                for hadm_id, g in groupby(test, itemgetter(0))}
-    note = pad([notes_bow[test_note_id_by_hadm_id[hadm_id]] for hadm_id in test_hadm_ids],
-               device=device)
+    note = [notes_bow[test_note_id_by_hadm_id[hadm_id]] for hadm_id in test_hadm_ids]
     candidates = list(range(num_icd9_codes))
-    icd = pad([icd_desc_bow[label] for label in candidates],
-              device=device)
+    icd = [icd_desc_bow[label] for label in candidates]
     token_embeds = nn.Embedding(num_unique_tokens, model_params.token_embed_len)
     pointwise_scorer = PointwiseScorer(token_embeds, token_embeds, model_params, train_params)
     pairwise_scorer = PairwiseScorer(token_embeds, token_embeds, model_params, train_params)

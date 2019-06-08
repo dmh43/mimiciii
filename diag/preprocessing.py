@@ -49,6 +49,20 @@ def pad_to_len(coll, max_len, pad_with=None):
   pad_with = pad_with if pad_with is not None else pad_token_idx
   return coll + [pad_with] * (max_len - len(coll)) if len(coll) < max_len else coll
 
+def pad_batch_list(pad_elem, batch, min_len=0):
+  assert isinstance(batch, list)
+  assert isinstance(pad_elem, (int, str))
+  result_len = max(min_len, max(_.map_(batch, len)))
+  to_stack = []
+  for elem in batch:
+    dim_len = len(elem)
+    if result_len != dim_len:
+      pad_seq = [pad_elem for i in range(result_len - dim_len)]
+      to_stack.append(elem + pad_seq)
+    else:
+      to_stack.append(elem)
+  return to_stack
+
 def collate_bow(bow):
   terms = []
   cnts = []
@@ -63,16 +77,11 @@ def collate_bow(bow):
   return terms, cnts
 
 def tokens_to_indexes(tokens, lookup=None, num_tokens=None, token_set=None):
-  def _append(coll, val, idx):
-    if isinstance(coll, dict):
-      coll[idx] = val
-    else:
-      coll.append(val)
   is_test = lookup is not None
   if lookup is None:
     lookup: dict = {'<unk>': unk_token_idx, '<pad>': pad_token_idx}
   result = []
-  for idx, tokens_chunk in enumerate(tokens):
+  for tokens_chunk in tokens:
     tokens_to_parse = tokens_chunk if num_tokens is None else tokens_chunk[:num_tokens]
     chunk_result = []
     for token in tokens_to_parse:
@@ -84,8 +93,7 @@ def tokens_to_indexes(tokens, lookup=None, num_tokens=None, token_set=None):
           chunk_result.append(lookup[token])
       else:
         chunk_result.append(unk_token_idx)
-    if len(chunk_result) > 0:
-      _append(result, chunk_result, idx)
+    result.append(chunk_result)
   return result, lookup
 
 def get_default_tokenizer(): return Tokenizer()
