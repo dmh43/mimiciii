@@ -2,3 +2,4 @@
 /mimiciii_db
 *.pyc
 data/*
+egg-info
