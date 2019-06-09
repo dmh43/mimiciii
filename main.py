@@ -33,8 +33,12 @@ from diag.lazy import LazyBuilder
 def main():
   device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
   model_params = m(min_num_occurances=10,
+                   append_hadamard=False,
+                   append_difference=False,
+                   hidden_layer_sizes=[100],
                    token_embed_len=100)
   train_params = m(dropout_keep_prob=0.8,
+                   batch_size=512,
                    use_layer_norm=True,
                    use_batch_norm=False,
                    use_bce_loss=False,
